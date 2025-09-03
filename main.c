@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 /* ************************************************************************** */
@@ -14,6 +15,15 @@
 /*   Updated: 2025/06/09 16:09:11 by kaisogai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+typedef struct s_philo
+{
+	int				id;
+	int				fork_a;
+	int				fork_b;
+	pthread_mutex_t	lock1;
+	pthread_mutex_t	lock2;
+}					t_philo;
 
 static int	is_space(char c)
 {
@@ -107,65 +117,20 @@ int	ft_atoi_error(const char *nptr, int *is_error)
 	return (result);
 }
 
-// #include <stdio.h>
-
-// int	main(void)
-// {
-// 	printf("%d\n", ft_atoi("42"));
-// 	printf("%d\n", ft_atoi(" "));
-// 	printf("%d\n", ft_atoi("   			-1"));
-// 	printf("%d\n", ft_atoi("abc123"));
-// 	printf("%d\n", ft_atoi("42abc"));
-// 	printf("%d\n", ft_atoi("-4200abc"));
-// 	printf("%d\n", ft_atoi("+ 42"));
-// 	printf("%d\n", ft_atoi("-00000001"));
-// 	printf("%d\n", ft_atoi("-1"));
-// 	printf("%d\n", ft_atoi("\t\v\f\r\n \f-6050"));
-// }
-// #include <stdio.h>
-
-// int	main(void)
-// {
-// 	int is_error = 0;
-// 	printf("%d\n", ft_atoi_error("420000000000000", &is_error));
-// 	printf("%d\n", is_error);
-// 	is_error = 0;
-// 	printf("%d\n", ft_atoi_error(" ", &is_error));
-// 	printf("%d\n", is_error);
-// 	is_error = 0;
-// 	printf("%d\n", ft_atoi_error("   			-1", &is_error));
-// 	printf("%d\n", is_error);
-// 	is_error = 0;
-// 	printf("%d\n", ft_atoi_error("1.0", &is_error));
-// 	printf("%d\n", is_error);
-// 	is_error = 0;
-// 	printf("%d\n", ft_atoi_error("42abc", &is_error));
-// 	printf("%d\n", is_error);
-// 	is_error = 0;
-// 	printf("%d\n", ft_atoi_error("-4200abc", &is_error));
-// 	printf("%d\n", is_error);
-// 	is_error = 0;
-// 	printf("%d\n", ft_atoi_error("+ 42", &is_error));
-// 	printf("%d\n", is_error);
-// 	is_error = 0;
-// 	printf("%d\n", ft_atoi_error("-00000001", &is_error));
-// 	printf("%d\n", is_error);
-// 	is_error = 0;
-// 	printf("%d\n", ft_atoi_error("-1", &is_error));
-// 	printf("%d\n", is_error);
-// 	is_error = 0;
-// 	printf("%d\n", ft_atoi_error("\t\v\f\r\n \f-6050", &is_error));
-// 	printf("%d\n", is_error);
-// }
 // スレッドで実行する関数
 void	*worker(void *arg)
 {
-	int	id;
+	struct timeval	tv;
+	int				id;
 
-	id = *(int *)arg;
+	t_philo *philo;         // 構造体へのポインタを用意
+	philo = (t_philo *)arg; // void* → t_philo* にキャスト
+	id = philo->id;
 	for (int i = 0; i < 5; i++)
 	{
-		printf("Thread %d: count %d\n", id, i);
+		gettimeofday(&tv, NULL);
+		tv.tv_usec /= 100;
+		printf("%ld.%ld %d has taken a fork\n", tv.tv_sec, tv.tv_usec, id);
 		sleep(1);
 	}
 	return (NULL);
@@ -196,19 +161,40 @@ int	validate_input_nums(char **input, int input_count)
 // time_to_sleep (in milliseconds)
 int	main(int argc, char **argv)
 {
+	int				fork1;
+	int				fork2;
+	pthread_mutex_t	lock1;
+	pthread_mutex_t	lock2;
+	t_philo			philo1;
+	t_philo			philo2;
+
+	fork1 = 0;
+	fork2 = 0;
 	int id1, id2;
-	pthread_t th1, th2;
 	id1 = 1, id2 = 2;
+	pthread_t th1, th2;
+	pthread_mutex_init(&lock1, NULL);
+	pthread_mutex_init(&lock2, NULL);
+	philo1.id = id1;
+	philo1.fork_a = fork1;
+	philo1.fork_b = fork2;
+	philo1.lock1 = lock1;
+	philo1.lock2 = lock2;
+	philo2.id = id1;
+	philo2.fork_a = fork1;
+	philo2.fork_b = fork2;
+	philo2.lock1 = lock1;
+	philo2.lock2 = lock2;
 	if (argc != 5)
 		return (1);
 	if (validate_input_nums(argv + 1, argc - 1) == -1)
 		return (1);
-	if (pthread_create(&th1, NULL, worker, &id1) != 0)
+	if (pthread_create(&th1, NULL, worker, &philo1) != 0)
 	{
 		perror("pthread_create");
 		return (1);
 	}
-	if (pthread_create(&th2, NULL, worker, &id2) != 0)
+	if (pthread_create(&th2, NULL, worker, &philo2) != 0)
 	{
 		perror("pthread_create");
 		return (1);
