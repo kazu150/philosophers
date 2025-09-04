@@ -1,29 +1,16 @@
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <unistd.h>
-
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_atoi.c                                          :+:      :+:    :+:   */
+/*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kaisogai <kaisogai@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/03 16:27:49 by kaisogai          #+#    #+#             */
-/*   Updated: 2025/06/09 16:09:11 by kaisogai         ###   ########.fr       */
+/*   Updated: 2025/09/05 01:35:20 by kaisogai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-typedef struct s_philo
-{
-	int				id;
-	int				fork_a;
-	int				fork_b;
-	pthread_mutex_t	lock1;
-	pthread_mutex_t	lock2;
-}					t_philo;
+#include "philo.h"
 
 static int	is_space(char c)
 {
@@ -126,13 +113,16 @@ void	*worker(void *arg)
 	t_philo *philo;         // 構造体へのポインタを用意
 	philo = (t_philo *)arg; // void* → t_philo* にキャスト
 	id = philo->id;
-	for (int i = 0; i < 5; i++)
-	{
-		gettimeofday(&tv, NULL);
-		tv.tv_usec /= 100;
-		printf("%ld.%ld %d has taken a fork\n", tv.tv_sec, tv.tv_usec, id);
-		sleep(1);
-	}
+	pthread_mutex_lock(philo->lock1);
+	pthread_mutex_lock(philo->lock2);
+	philo->fork_a++;
+	philo->fork_b++;
+	gettimeofday(&tv, NULL);
+	tv.tv_usec /= 100;
+	printf("%ld.%ld %d has taken a fork\n", tv.tv_sec, tv.tv_usec, id);
+	sleep(1);
+	pthread_mutex_unlock(philo->lock2);
+	pthread_mutex_unlock(philo->lock1);
 	return (NULL);
 }
 
@@ -163,42 +153,40 @@ int	main(int argc, char **argv)
 {
 	int				fork1;
 	int				fork2;
-	pthread_mutex_t	lock1;
-	pthread_mutex_t	lock2;
-	t_philo			philo1;
-	t_philo			philo2;
+	pthread_mutex_t	*lock1;
+	pthread_mutex_t	*lock2;
+	t_philo			*philo1;
+	t_philo			*philo2;
 
+	lock1 = malloc(sizeof *lock1);
+	lock2 = malloc(sizeof *lock2);
 	fork1 = 0;
 	fork2 = 0;
 	int id1, id2;
 	id1 = 1, id2 = 2;
 	pthread_t th1, th2;
-	pthread_mutex_init(&lock1, NULL);
-	pthread_mutex_init(&lock2, NULL);
-	philo1.id = id1;
-	philo1.fork_a = fork1;
-	philo1.fork_b = fork2;
-	philo1.lock1 = lock1;
-	philo1.lock2 = lock2;
-	philo2.id = id1;
-	philo2.fork_a = fork1;
-	philo2.fork_b = fork2;
-	philo2.lock1 = lock1;
-	philo2.lock2 = lock2;
+	pthread_mutex_init(lock1, NULL);
+	pthread_mutex_init(lock2, NULL);
+	philo1 = malloc(sizeof(t_philo) * 1);
+	philo2 = malloc(sizeof(t_philo) * 1);
+	philo1->id = id1;
+	philo1->fork_a = fork1;
+	philo1->fork_b = fork2;
+	philo1->lock1 = lock1;
+	philo1->lock2 = lock2;
+	philo2->id = id2;
+	philo2->fork_a = fork1;
+	philo2->fork_b = fork2;
+	philo2->lock1 = lock1;
+	philo2->lock2 = lock2;
 	if (argc != 5)
 		return (1);
 	if (validate_input_nums(argv + 1, argc - 1) == -1)
 		return (1);
-	if (pthread_create(&th1, NULL, worker, &philo1) != 0)
-	{
-		perror("pthread_create");
-		return (1);
-	}
-	if (pthread_create(&th2, NULL, worker, &philo2) != 0)
-	{
-		perror("pthread_create");
-		return (1);
-	}
+	if (pthread_create(&th1, NULL, worker, philo1) != 0)
+		return (perror("pthread_create"), 1);
+	if (pthread_create(&th2, NULL, worker, philo2) != 0)
+		return (perror("pthread_create"), 1);
 	pthread_join(th1, NULL);
 	pthread_join(th2, NULL);
 	printf("both threads finished\n");
