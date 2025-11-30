@@ -6,7 +6,7 @@
 /*   By: kaisogai <kaisogai@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/03 16:27:49 by kaisogai          #+#    #+#             */
-/*   Updated: 2025/10/12 18:51:35 by kaisogai         ###   ########.fr       */
+/*   Updated: 2025/11/30 14:31:03 by kaisogai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ void	*worker(void *arg)
 	philo->fork_b++;
 	gettimeofday(&tv, NULL);
 	tv.tv_usec /= 100;
-	printf("%ld.%ld %d has taken a fork\n", tv.tv_sec, tv.tv_usec, id);
+	printf("%ld.%d %d has taken a fork\n", tv.tv_sec, tv.tv_usec, id);
 	sleep(1);
 	pthread_mutex_unlock(&philo->lock2);
 	pthread_mutex_unlock(&philo->lock1);
