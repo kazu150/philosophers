@@ -6,7 +6,7 @@
 /*   By: kaisogai <kaisogai@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/12 18:28:07 by kaisogai          #+#    #+#             */
-/*   Updated: 2025/12/09 17:59:10 by kaisogai         ###   ########.fr       */
+/*   Updated: 2025/12/13 22:16:27 by kaisogai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,8 +22,6 @@
 typedef struct s_philo
 {
 	int				id;
-	int				fork_a;
-	int				fork_b;
 	pthread_mutex_t	lock;
 	pthread_t		th;
 	struct s_philo	*next;

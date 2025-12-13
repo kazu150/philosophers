@@ -6,7 +6,7 @@
 /*   By: kaisogai <kaisogai@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/03 16:27:49 by kaisogai          #+#    #+#             */
-/*   Updated: 2025/12/09 18:06:45 by kaisogai         ###   ########.fr       */
+/*   Updated: 2025/12/13 22:45:13 by kaisogai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,13 +23,12 @@ void	*worker(void *arg)
 	id = philo->id;
 	pthread_mutex_lock(&philo->lock);
 	pthread_mutex_lock(&philo->next->lock);
-	philo->fork_a++;
-	philo->fork_b++;
 	gettimeofday(&tv, NULL);
 	tv.tv_usec /= 100;
 	printf("%ld.%ld %d has taken a fork\n", (long)tv.tv_sec, (long)tv.tv_usec,
 		id);
 	printf("%ld.%ld %d is eating\n", (long)tv.tv_sec, (long)tv.tv_usec, id);
+	sleep(3);
 	pthread_mutex_unlock(&philo->lock);
 	pthread_mutex_unlock(&philo->next->lock);
 	return (NULL);
@@ -54,6 +53,32 @@ int	validate_input_nums(char **input, int input_count)
 	return (0);
 }
 
+void	initialize(t_philo **philo, int philo_num)
+{
+	int		i;
+	t_philo	*philo_first;
+	t_philo	*prev;
+
+	philo_first = NULL;
+	prev = NULL;
+	i = 0;
+	while (i < philo_num)
+	{
+		*philo = malloc(sizeof(t_philo) * 1);
+		(*philo)->id = i;
+		(*philo)->next = NULL;
+		pthread_mutex_init(&(*philo)->lock, NULL);
+		if (!philo_first)
+			philo_first = *philo;
+		if (prev)
+			prev->next = *philo;
+		prev = *philo;
+		i++;
+	}
+	prev->next = philo_first;
+	*philo = philo_first;
+}
+
 // number_of_philosophers
 // time_to_die (in milliseconds)
 // time_to_eat (in milliseconds)
@@ -61,35 +86,20 @@ int	validate_input_nums(char **input, int input_count)
 int	main(int argc, char **argv)
 {
 	t_philo	*philo;
-	t_philo	*philo_first;
+	int		philo_num;
 	int		i;
 
-	philo_first = NULL;
+	philo = NULL;
 	i = 0;
 	if (argc != 5)
 		return (1);
 	if (validate_input_nums(argv + 1, argc - 1) == -1)
 		return (1);
-	// 初期化
-	while (i < ft_atoi(argv[1]))
-	{
-		philo = malloc(sizeof(t_philo) * 1);
-		if (!philo_first)
-			philo_first = philo;
-		philo = philo->next;
-	}
-	philo = philo_first;
-	while (i < ft_atoi(argv[1]))
+	philo_num = ft_atoi(argv[1]);
+	initialize(&philo, philo_num);
+	while (i < philo_num)
 	{
 		philo->id = i;
-		philo->fork_a = 0;
-		philo->fork_b = 0;
-		pthread_mutex_init(&philo->lock, NULL);
-		pthread_mutex_init(&philo->next->lock, NULL);
-
-
-
-
 		if (pthread_create(&philo->th, NULL, worker, philo) != 0)
 		{
 			perror("pthread_create");
@@ -98,10 +108,12 @@ int	main(int argc, char **argv)
 		i++;
 		philo = philo->next;
 	}
-	while (philo_first)
+	i = 0;
+	while (i < philo_num)
 	{
-		pthread_join(philo_first->th, NULL);
-		philo_first = philo_first->next;
+		pthread_join(philo->th, NULL);
+		philo = philo->next;
+		i++;
 	}
 	printf("all threads finished\n");
 	return (0);
