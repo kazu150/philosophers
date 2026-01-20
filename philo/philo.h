@@ -19,12 +19,28 @@
 # include <sys/time.h>
 # include <unistd.h>
 
+typedef struct s_data
+{
+	int				philo_num;
+	long			time_to_die;
+	long			time_to_eat;
+	long			time_to_sleep;
+	int				must_eat_count;
+	long			start_time;
+	int				someone_died;
+	pthread_mutex_t	print_lock;
+	pthread_mutex_t	death_lock;
+}					t_data;
+
 typedef struct s_philo
 {
 	int				id;
-	pthread_mutex_t	lock;
+	pthread_mutex_t	*left_fork;
+	pthread_mutex_t	*right_fork;
 	pthread_t		th;
-	struct s_philo	*next;
+	long			last_meal_time;
+	int				meals_eaten;
+	t_data			*data;
 }					t_philo;
 
 int	ft_atoi(const char *nptr);
